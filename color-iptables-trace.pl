@@ -26,9 +26,12 @@ my $fields = { 'TTL'  => $c->{'cyan'},
 my @table_colors = ( $c->{'bold_green'},
                      $c->{'bold_yellow'},
                      $c->{'bold_cyan'} );
+# This will be incremented almost immediately. Start at -1 so that the table
+# colors will be consistent between packets.
 my $cur_color = -1;
 my $last_table = '';
 my $last_line = '';
+# 'colorizer' in all (some) of the colors of the ANSI rainbow
 my $awful_str = sprintf("%sc%so%sl%so%sr%si%sz%se%sr%s",
                         $c->{'bold_red'},
                         $c->{'bold_green'},
