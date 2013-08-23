@@ -1,0 +1,32 @@
+USAGE
+
+convert.pl -i INPUT_DIR -o OUTPUT_DIR -t TEMPLATE_FILE
+
+Converts .convert files in INPUT_DIR and writes them to OUTPUT_DIR, preserving
+the directory structure. Uses TEMPLATE_FILE as the basis of the output files.
+
+The resulting files are html, assuming a proper template file.
+
+
+.convert SYNTAX
+
+If a line is to be converted, it will begin with a specific tag. Currently there
+are three types of tags:
+
+=T=
+    This sets the <title> to the rest of the text on the line, and also wraps that line in <h1> tags.
+
+=#=
+    Where # is any number. This wraps the line in <h#+1> tags.
+
+=R=
+    The =R= tag is dropped and the rest of the line is added as raw HTML
+
+All lines that do not begin with a tag are wrapped in <p> tags.
+
+
+template SYNTAX
+
+Only two things are converted in the template. The line beginning with <!-- ##TITLE --> is replaced with the title. And the line beginning with <!-- ##BODY --> is filled with the converted html from the .convert file. Whatever indentation the <!-- ##BODY --> line has will be preserved for all of the .convert contents.
+
+
