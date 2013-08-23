@@ -31,6 +31,7 @@ my @table_colors = ( $c->{'bold_green'},
 my $cur_color = -1;
 my $last_table = '';
 my $last_line = '';
+my $SUCCINT = 0;
 # 'colorizer' in all (some) of the colors of the ANSI rainbow
 my $awful_str = sprintf("%sc%so%sl%so%sr%si%sz%se%sr%s",
                         $c->{'bold_red'},
@@ -44,7 +45,8 @@ my $awful_str = sprintf("%sc%so%sl%so%sr%si%sz%se%sr%s",
                         $c->{'bold_yellow'},
                         $c->{'reset'});
 
-GetOptions('help|?' => sub { print <<HELPSTR
+GetOptions('succint' => \$SUCCINT,
+           'help|?' => sub { print <<HELPSTR
 iptables TRACE target log $awful_str
 
 Usage: $0 trace.out | less -R
@@ -84,6 +86,13 @@ sub process {
         $cur_line =~ s/(\b$field=.*?) /$fields->{$field}$1$default_color /g;
     }
     $cur_line =~ s/\bTRACE: (.+?) /TRACE: $table_colors[$cur_color]$1\e[0;35m /g;
+    if ($SUCCINT) {
+        my $r = sprintf("$default_color.*?");
+        $r =~ s/\[/\\[/g;
+        $cur_line =~ s/(^|\n).*?TRACE: /$1TRACE: /;
+        $cur_line =~ s/$r( ?\e.+?m)/$1/g;
+        $cur_line =~ s/$r$//g;
+    }
     print $default_color;
     print $cur_line;
     print $c->{'reset'};
