@@ -11,6 +11,7 @@ my $INPUT_DIR;
 my $INPUT_FILE;
 my $TEMPLATE_FILE;
 my $cwd = getcwd;
+my $ext = "wip";
 my $usage = <<USAGE
 $0 -i INPUT_DIR -o OUTPUT_DIR -t TEMPLATE_FILE
 
@@ -43,8 +44,8 @@ sub convert_dir {
     use vars '*name';
     *name = *File::Find::name;
 
-    if ( lstat($_) && /^.*\.convert\z/s ) {
-        $name =~ /^$INPUT_DIR(.*)\/(.+?).convert$/;
+    if ( lstat($_) && /^.*\.$ext\z/s ) {
+        $name =~ /^$INPUT_DIR(.*)\/(.+?).$ext$/;
         my $base_dir = '';
         my $base_name = $2;
         if (defined $1) { $base_dir = $1; }
@@ -67,14 +68,55 @@ sub convert_file {
 
     while(<$TEMPLATE>) {
         if (/^\s*<\!--\s*##TITLE\s*-->.*$/) {
-            print $OUTPUT $converted->{'title'};
+            print $OUTPUT "<title>$converted->{title}</title>\n";
         } elsif (/^(\s*)<\!--\s*##BODY\s*-->.*$/) {
             my $indent = '';
             if (defined $1) {
                 $indent = $1;
             }
+            for ( 
+                  '<div class="navbar">',
+                  '  <div class="navbar-inner">',
+                  '    <div class="container">',
+                  "      <h1>$converted->{title}</h1>",
+                  '    </div>',
+                  '  </div>',
+                  '</div>',
+                  '<div class="container-fluid">',
+                  '<div class="row-fluid">',
+                )
+            {
+                print $OUTPUT "$indent$_\n";
+            }
+            if (scalar @{$converted->{'toc'}}>4) {
+                for ( 
+                    '  <aside class="span3">',
+                    '   <div class="well sidebar-nav affix">',
+                    '    <ul class="nav nav-list">') 
+                {
+                    print $OUTPUT "$indent$_\n";
+                }
+                for (@{$converted->{'toc'}}) {
+                    print $OUTPUT "$indent      $_";
+                }
+                for ( '    </ul>',
+                    '   </div>',
+                    '  </aside>')
+                {
+                    print $OUTPUT "$indent$_\n";
+                }
+            }
+            for ( '',
+                  '  <div class="span9">') {
+                print $OUTPUT "$indent$_\n";
+            }
             for (@{$converted->{'body'}}) {
-                print $OUTPUT "$indent$_";
+                print $OUTPUT "$indent    $_";
+            }
+            for ( '  </div>',
+                  '</div>',
+                  '</div>') {
+                print $OUTPUT "$indent$_\n";
             }
         } else {
             print $OUTPUT $_;
@@ -87,26 +129,91 @@ sub convert_file {
 sub process_input {
     my ($input_file) = @_;
     my $converted = {'title' => '',
+                     'toc'   => [],
                      'body'  => []};
-    open(my $INPUT,    '<', $input_file) or die "$0: $input_file: $!\n";
+    my $first_section = 1;
+    my $dl = {'last' => 0, 'cur' => 0};
+    open(my $INPUT, '<', $input_file) or die "$0: $input_file: $!\n";
     while (<$INPUT>) {
         chomp;
-        my $s = '';
-        if (/^\s*$/) {
+        # Empty lines and comments
+        if (/^\s*(#.*)?$/) {
             next;
-        } elsif (/^=T=(.+)$/) {
-            $converted->{'title'} = "<title>$1</title>";
-            $s = "<h1>$1</h1>\n";
-        } elsif (/^=([0-9]+)=(.+)$/) {
-            my ($num,$line) = ($1,$2);
-            $num++;
-            $s = "<h$num>$line</h$num>\n";
-        } elsif (/^=R=(.+?)$/) {
-            $s = "$1\n";
-        } else {
-            $s = "<p>$_</p>\n";
+        } 
+        $dl->{'cur'} = 0;
+        # FIXME(brosenberg): This is dumb. Do this better.
+        if ($dl->{'last'} == 1 && !/^=DL=/) {
+            push($converted->{'body'},"  </dl>\n");
         }
-        push($converted->{'body'},$s);
+    
+        # Headings
+        if (/^=([0-9])=(.+)$/) {
+            my ($heading, $section) = ($1,$2);
+            my $t;
+            (my $section_safe = $section) =~ s/\W//g;
+            $heading++;
+            if ($heading<4) {
+                my @classes;
+                # Check to see if this is the first toc entry and first section
+                if ($first_section) {
+                    push @classes, "active";
+                    $first_section--;
+                } else {
+                    push($converted->{'body'},"</section>\n");
+                }
+                if ($heading>2) {
+                    push @classes, "subsection";
+                }
+                if (scalar @classes) {
+                    $t = "<li class=\"".join(' ',@classes)."\">";
+                } else {
+                    $t = "<li>";
+                }
+                push($converted->{'body'},"\n");
+                push($converted->{'body'},"<section id=\"$section_safe\">\n");
+                $t .= "<a href=\"#$section_safe\">$section</a></li>\n";
+                push($converted->{'toc'},$t);
+            }
+            push($converted->{'body'}, "  <h$heading>$section</h$heading>\n");
+        # Description Lists
+        } elsif (/^=DL=(.+?):(.+)$/) {
+            if ($dl->{'last'} == 0) {
+                push($converted->{'body'},"  <dl class=\"dl-horizontal\">\n");
+            }
+            push($converted->{'body'},"    <dt>$1</dt>\n");
+            push($converted->{'body'},"    <dd>$2</dd>\n");
+            $dl->{'cur'} = 1;
+        # Emphasis
+        } elsif (/^=E=(.+)$/) {
+            push($converted->{'body'},"  <p><em>$1</em></p>\n");
+        # Images
+        } elsif (/^=I=(\S+)(\s*[0-9]+x[0-9]+\s*)?$/) {
+            if (defined $2) {
+                my ($path,$size) = ($1,$2);
+                $size =~ /^\s*([0-9]+)x([0-9]+)\s*$/;
+                push($converted->{'body'}, "  <img src=\"$path\" height=\"$1\" width=\"$2\">\n");
+            } else {
+                push($converted->{'body'}, "  <img src=\"$1\">\n");
+            }
+        # Links
+        } elsif (/^=L=(.+?): (.+)$/) {
+            push($converted->{'body'},"    <h4><a href=\"$1\">&raquo; $2</a></h4>\n");
+        # Raw html
+        } elsif (/^=R=(.+)$/) {
+            push($converted->{'body'}, "  $1\n");
+        # Title
+        } elsif (/^=T=(.+)$/ && $converted->{'title'} eq '') {
+            $converted->{'title'} = "$1";
+        } else {
+            push($converted->{'body'}, "  <p>$_</p>\n");
+        } 
+        $dl->{'last'} = $dl->{'cur'};
+    }
+    if ($dl->{'cur'} == 1) {
+        push($converted->{'body'},"  </dl>\n");
+    }
+    if (!$first_section) {
+        push($converted->{'body'},"</section>\n");
     }
     close $INPUT;
     return $converted;
