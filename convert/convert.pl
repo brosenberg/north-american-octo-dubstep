@@ -212,22 +212,22 @@ sub process_input {
         # Tables
         } elsif (/^=TAB=(.+)$/) {
             my @elems = split('::',$1);
+            my $elem_tag = 'td';
             if ($table->{'last'} == 0) {
+                $elem_tag = 'th';
                 push($converted->{'body'},"  <table class=\"table table-bordered table-condensed table-striped table-hover\">\n");
                 push($converted->{'body'},"    <thead><tr>\n");
-                push($converted->{'body'},"      <tr>\n");
-                for my $elem (@elems) {
-                    push($converted->{'body'},"        <th>$elem</th>\n");
-                }
-                push($converted->{'body'},"      </tr>\n");
+            }
+
+            push($converted->{'body'},"      <tr>\n");
+            for my $elem (@elems) {
+                push($converted->{'body'},"        <$elem_tag>$elem</$elem_tag>\n");
+            }
+            push($converted->{'body'},"      </tr>\n");
+
+            if ($table->{'last'} == 0) {
                 push($converted->{'body'},"    </tr></thead>\n");
                 push($converted->{'body'},"    <tbody>\n");
-            } else {
-                push($converted->{'body'},"      <tr>\n");
-                for my $elem (@elems) {
-                    push($converted->{'body'},"        <td>$elem</td>\n");
-                }
-                push($converted->{'body'},"      </tr>\n");
             }
             $table->{'cur'} = 1;
         } else {
