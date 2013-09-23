@@ -133,6 +133,7 @@ sub process_input {
                      'body'  => []};
     my $first_section = 1;
     my $dl = {'last' => 0, 'cur' => 0};
+    my $table = {'last' => 0, 'cur' => 0};
     open(my $INPUT, '<', $input_file) or die "$0: $input_file: $!\n";
     while (<$INPUT>) {
         chomp;
@@ -144,6 +145,10 @@ sub process_input {
         # FIXME(brosenberg): This is dumb. Do this better.
         if ($dl->{'last'} == 1 && !/^=DL=/) {
             push($converted->{'body'},"  </dl>\n");
+        }
+        if ($table->{'last'} == 1 && !/^=TAB=/) {
+            push($converted->{'body'},"    </tbody>\n");
+            push($converted->{'body'},"  </table>\n");
         }
     
         # Headings
@@ -204,13 +209,32 @@ sub process_input {
         # Title
         } elsif (/^=T=(.+)$/ && $converted->{'title'} eq '') {
             $converted->{'title'} = "$1";
+        # Tables
+        } elsif (/^=TAB=(.+)$/) {
+            my @elems = split('::',$1);
+            if ($table->{'last'} == 0) {
+                push($converted->{'body'},"  <table class=\"table table-bordered table-condensed table-striped table-hover\">\n");
+                push($converted->{'body'},"    <thead><tr>\n");
+                push($converted->{'body'},"      <tr>\n");
+                for my $elem (@elems) {
+                    push($converted->{'body'},"        <th>$elem</th>\n");
+                }
+                push($converted->{'body'},"      </tr>\n");
+                push($converted->{'body'},"    </tr></thead>\n");
+                push($converted->{'body'},"    <tbody>\n");
+            } else {
+                push($converted->{'body'},"      <tr>\n");
+                for my $elem (@elems) {
+                    push($converted->{'body'},"        <td>$elem</td>\n");
+                }
+                push($converted->{'body'},"      </tr>\n");
+            }
+            $table->{'cur'} = 1;
         } else {
             push($converted->{'body'}, "  <p>$_</p>\n");
         } 
         $dl->{'last'} = $dl->{'cur'};
-    }
-    if ($dl->{'cur'} == 1) {
-        push($converted->{'body'},"  </dl>\n");
+        $table->{'last'} = $table->{'cur'};
     }
     if (!$first_section) {
         push($converted->{'body'},"</section>\n");
