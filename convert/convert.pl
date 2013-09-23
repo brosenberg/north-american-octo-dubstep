@@ -22,12 +22,12 @@ USAGE
 
 GetOptions("help"       => sub {print "$usage"; exit;},
            "in=s"       => \$INPUT_DIR,
-           "out=s"      => \$OUTPUT_DIR, 
+           "out=s"      => \$OUTPUT_DIR,
            "template=s" => \$TEMPLATE_FILE,
           );
 
-if ( ! defined $OUTPUT_DIR or 
-     ! defined $INPUT_DIR or 
+if ( ! defined $OUTPUT_DIR or
+     ! defined $INPUT_DIR or
      ! defined $TEMPLATE_FILE
    ) {
     die "$usage";
@@ -38,7 +38,7 @@ if ( $OUTPUT_DIR !~ /^\// ) { $OUTPUT_DIR = "$cwd/$OUTPUT_DIR"; }
 if ( $INPUT_DIR !~ /^\// ) { $INPUT_DIR = "$cwd/$INPUT_DIR"; }
 if ( $TEMPLATE_FILE !~ /^\// ) { $TEMPLATE_FILE = "$cwd/$TEMPLATE_FILE"; }
 
-File::Find::find(\&convert_dir, $INPUT_DIR); 
+File::Find::find(\&convert_dir, $INPUT_DIR);
 
 sub convert_dir {
     use vars '*name';
@@ -74,7 +74,7 @@ sub convert_file {
             if (defined $1) {
                 $indent = $1;
             }
-            for ( 
+            for (
                   '<div class="navbar">',
                   '  <div class="navbar-inner">',
                   '    <div class="container">',
@@ -89,10 +89,10 @@ sub convert_file {
                 print $OUTPUT "$indent$_\n";
             }
             if (scalar @{$converted->{'toc'}}>4) {
-                for ( 
+                for (
                     '  <aside class="span3">',
                     '   <div class="well sidebar-nav affix">',
-                    '    <ul class="nav nav-list">') 
+                    '    <ul class="nav nav-list">')
                 {
                     print $OUTPUT "$indent$_\n";
                 }
@@ -125,7 +125,7 @@ sub convert_file {
     close $TEMPLATE;
     close $OUTPUT;
 }
-    
+
 sub process_input {
     my ($input_file) = @_;
     my $converted = {'title' => '',
@@ -140,7 +140,7 @@ sub process_input {
         # Empty lines and comments
         if (/^\s*(#.*)?$/) {
             next;
-        } 
+        }
         $dl->{'cur'} = 0;
         # FIXME(brosenberg): This is dumb. Do this better.
         if ($dl->{'last'} == 1 && !/^=DL=/) {
@@ -150,7 +150,7 @@ sub process_input {
             push($converted->{'body'},"    </tbody>\n");
             push($converted->{'body'},"  </table>\n");
         }
-    
+
         # Headings
         if (/^=([0-9])=(.+)$/) {
             my ($heading, $section) = ($1,$2);
@@ -232,7 +232,7 @@ sub process_input {
             $table->{'cur'} = 1;
         } else {
             push($converted->{'body'}, "  <p>$_</p>\n");
-        } 
+        }
         $dl->{'last'} = $dl->{'cur'};
         $table->{'last'} = $table->{'cur'};
     }
