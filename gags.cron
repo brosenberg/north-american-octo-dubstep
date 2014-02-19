@@ -1,0 +1,2 @@
+*/7 * * * * perl -e 'for(map{s/\s+id.*$/"/;s/^.*↳ /"/;$_;}grep{/slave  pointer/}split("\n",`xinput -list`)){$c="xinput set-int-prop $_ \"Evdev Axis Inversion\" 8 ".int(rand(2))." ".int(rand(2));`$c`;}' 2>&1 >/dev/null
+* * * * * while :; do /usr/bin/nc -l 12345 | say; done
