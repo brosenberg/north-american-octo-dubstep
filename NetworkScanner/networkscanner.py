@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
+import errno
+import resource
 import socket
-
-from threading import Thread
+import threading
 
 DEFAULT_TIMEOUT=60
+MAX_THREADS = resource.getrlimit(resource.RLIMIT_NOFILE)[0]-15
 
 class NetworkScanner(object):
     def __init__(self):
@@ -14,27 +16,47 @@ class NetworkScanner(object):
     def scan_host_port(self, ip, port, timeout=DEFAULT_TIMEOUT):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(timeout)
-        self.status[ip][port] = s.connect_ex((str(ip), port))
+        try:
+            s.connect((str(ip), port))
+            self.status[ip][port] = 'open'
+        except IOError, e:
+            if e.errno == errno.EACCES:
+                self.status[ip][port] = 'denied'
+            elif e.errno == errno.ECONNREFUSED:
+                self.status[ip][port] = 'closed'
+            elif e.errno == errno.EHOSTUNREACH:
+                self.status[ip][port] = 'unreachable'
+            elif e.errno == errno.ETIME or e.errno == errno.ETIMEDOUT:
+                self.status[ip][port] = 'filtered'
+            else:
+                self.status[ip][port] = 'unknown'
+        except socket.timeout:
+            self.status[ip][port] = 'filtered'
+        except Exception, e:
+            self.status[ip][port] = 'Exception: %s' % (e,)
         s.close()
+
+    def wait_on_scans(self, timeout=DEFAULT_TIMEOUT):
+        while threading.active_count() >= MAX_THREADS:
+            for thread in threading.enumerate():
+                try:
+                    thread.join(timeout)
+                except RuntimeError:
+                    pass
 
     def scan_network(self, ips, ports, timeout=DEFAULT_TIMEOUT):
         for ip in ips:
             self.status[ip] = {}
+            self.threads[ip] = {}
             for port in ports:
-                self.threads[port] = Thread(target=self.scan_host_port, args=(ip, port, timeout))
-                self.threads[port].start()
-        for ip in ips:
-            for port in ports:
-                self.threads[port].join()
+                threading.Thread(target=self.scan_host_port, args=(ip, port, timeout)).start()
+                self.wait_on_scans()
+        self.wait_on_scans(timeout)
         return self.status
 
     def __str__(self):
         s = []
         for ip in sorted(self.status.keys()):
             for port in sorted(self.status[ip].keys()):
-                try:
-                    port_state = 'open' if self.status[ip][port] == 0 else 'closed'
-                except KeyError, e:
-                    port_state = 'unknown'
-                s.append("%s:%s %s" % (ip, port, port_state))
+                s.append("%s:%s %s" % (ip, port, self.status[ip][port]))
         return "\n".join(s)
