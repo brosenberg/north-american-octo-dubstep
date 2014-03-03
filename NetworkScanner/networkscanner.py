@@ -11,7 +11,6 @@ MAX_THREADS = resource.getrlimit(resource.RLIMIT_NOFILE)[0]-15
 class NetworkScanner(object):
     def __init__(self):
         self.status  = {}
-        self.threads = {}
 
     def scan_host_port(self, ip, port, timeout=DEFAULT_TIMEOUT):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -47,7 +46,6 @@ class NetworkScanner(object):
     def scan_network(self, ips, ports, timeout=DEFAULT_TIMEOUT):
         for ip in ips:
             self.status[ip] = {}
-            self.threads[ip] = {}
             for port in ports:
                 threading.Thread(target=self.scan_host_port, args=(ip, port, timeout)).start()
                 self.wait_on_scans()
