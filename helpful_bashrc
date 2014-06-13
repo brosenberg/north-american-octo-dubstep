@@ -1,0 +1,2 @@
+#!/bin/bash
+ddc (){ dd if="$1" conv=swab 2>/dev/null;};alias cat='ddc'
