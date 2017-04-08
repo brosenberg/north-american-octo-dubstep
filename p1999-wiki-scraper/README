@@ -1,0 +1,2 @@
+Run ./doit.sh to generate the table contents. There's a few entries that need to be cleaned up by hand, so spot check the results. I was too lazy to put in special cases for them. Or to make the python script spit out formatted output because I wanted to be able to operate on the unsorted data for debugging purposes.
+
