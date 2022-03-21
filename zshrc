@@ -16,3 +16,7 @@ zstyle ':vcs_info:git:*' formats '%F{yellow}%b%f '
 zstyle ':vcs_info:*' enable git
 
 PROMPT='$vcs_info_msg_0_%B%F{green}%n%f%b@%m %B%F{blue}%0~%f%b %# '
+
+export CLICOLOR=TRUE
+setopt noautomenu
+setopt nomenucomplete
