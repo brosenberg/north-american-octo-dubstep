@@ -20,3 +20,8 @@ PROMPT='$vcs_info_msg_0_%B%F{green}%n%f%b@%m %B%F{blue}%0~%f%b %# '
 export CLICOLOR=TRUE
 setopt noautomenu
 setopt nomenucomplete
+
+alias ack='ack -i'
+alias less='less -R'
+alias l='ls'
+alias sl='ls'
