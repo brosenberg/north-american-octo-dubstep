@@ -1,0 +1,13 @@
+[core]
+    editor = /usr/bin/vi
+[credential]
+    helper = cache
+[alias]
+    s = status
+    r = remote -v
+    b = branch
+    lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cd)%Creset' --abbrev-commit --date=relative
+[color]
+    ui = true
+[log]
+    date = local
